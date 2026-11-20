@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Card Wallet</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0b1120;
+    color: white;
+    padding: 20px;
+  }
+  .container {
+    max-width: 440px;
+    margin: auto;
+  }
+  h1 { font-size: 22px; margin-bottom: 5px; }
+  .sub { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+  
+  .card {
+    background: linear-gradient(135deg, #1e3a8a, #0f172a);
+    border: 1px solid #3b82f6;
+    border-radius: 20px;
+    padding: 24px;
+    margin: 18px 0;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .card-number {
+    font-size: 21px;
+    margin: 26px 0 18px;
+    letter-spacing: 2.5px;
+    font-family: monospace;
+  }
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .card-holder {
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #cbd5e1;
+  }
+  .card-exp {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+  .balance-box { text-align: right; }
+  .balance-label { font-size: 11px; color: #94a3b8; }
+  .balance { font-size: 26px; font-weight: bold; color: #38bdf8; }
+
+  .panel {
+    background: #151e2e;
+    padding: 18px;
+    border-radius: 14px;
+    margin-top: 16px;
+    border: 1px solid #243044;
+  }
+  .panel h3 { margin: 0 0 12px; font-size: 16px; color: #e2e8f0; }
+  .row { display: flex; gap: 10px; }
+  input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: white;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  input:focus { outline: none; border-color: #6366f1; }
+  button {
+    width: 100%;
+    border: 0;
+    padding: 13px;
+    border-radius: 10px;
+    background: #6366f1;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  button:hover { background: #4f46e5; }
+  button.deposit-btn { background: #059669; margin-top: 6px; }
+  button.deposit-btn:hover { background: #047857; }
+  
+  #message { font-size: 13px; margin-top: 10px; min-height: 18px; }
+  .success { color: #34d399; }
+  .error { color: #f87171; }
+  #history { font-size: 13px; line-height: 1.8; color: #cbd5e1; max-height: 180px; overflow-y: auto; }
+  .tx-item { border-bottom: 1px solid #1e293b; padding: 6px 0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Virtual Card Wallet</h1>
+  <div class="sub">Instant Card Linking & One-Click Payment (No OTP)</div>
+
+  <!-- Active Card Display -->
+  <div class="card">
+    <div class="card-top">
+      <span class="badge" id="cardStatus">NO CARD LINKED</span>
+      <span style="font-weight:bold; font-style:italic; color:#93c5fd;">VISA</span>
+    </div>
+    <div class="card-number" id="displayNumber">•••• •••• •••• ••••</div>
+    <div class="card-footer">
+      <div>
+        <div class="card-holder" id="displayName">CARD HOLDER</div>
+        <div class="card-exp" id="displayExp">EXP: --/-- | CVV: ---</div>
+      </div>
+      <div class="balance-box">
+        <div class="balance-label">Available Balance</div>
+        <div class="balance" id="balance">$0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Update Card Section -->
+  <div class="panel">
+    <h3>1. Add / Link Virtual Card</h3>
+    <input id="cardName" type="text" placeholder="Cardholder Name (e.g. MD Sanaullah)">
+    <input id="cardNumber" type="text" maxlength="19" placeholder="Card Number (16 digits)" oninput="formatCardNumber(this)">
+    <div class="row">
+      <input id="cardExp" type="text" maxlength="5" placeholder="MM/YY" oninput="formatExpiry(this)">
+      <input id="cardCvv" type="password" maxlength="3" placeholder="CVV">
+      <input id="initBalance" type="number" step="0.01" placeholder="Initial USD ($)">
+    </div>
+    <button onclick="addCard()">Save & Activate Card</button>
+  </div>
+
+  <!-- Instant Payment Section -->
+  <div class="panel">
+    <h3>2. Instant Payment / Deposit</h3>
+    <input id="merchant" type="text" placeholder="Merchant / Purpose (e.g. Store Purchase)">
+    <input id="amount" type="number" min="0.01" step="0.01" placeholder="Amount (USD)">
+    <button onclick="payInstant()">Pay Now (Instant - No OTP)</button>
+    <button class="deposit-btn" onclick="addFunds()">+ Add Balance to Card</button>
+    <div id="message"></div>
+  </div>
+
+  <!-- Transaction History -->
+  <div class="panel">
+    <h3>Transaction History</h3>
+    <div id="history">No transactions yet.</div>
+  </div>
+</div>
+
+<script>
+// Load saved data from browser storage
+let wallet = JSON.parse(localStorage.getItem("virtual_card_wallet")) || {
+  hasCard: false,
+  name: "CARD HOLDER",
+  number: "•••• •••• •••• ••••",
+  exp: "--/--",
+  cvv: "---",
+  balance: 0,
+  history: []
+};
+
+function saveWallet() {
+  localStorage.setItem("virtual_card_wallet", JSON.stringify(wallet));
+  render();
+}
+
+function formatCardNumber(input) {
+  let val = input.value.replace(/\D/g, '').substring(0, 16);
+  input.value = val.replace(/(.{4})/g, '$1 ').trim();
+}
+
+function formatExpiry(input) {
+  let val = input.value.replace(/\D/g, '').substring(0, 4);
+  if (val.length >= 3) {
+    input.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+  } else {
+    input.value = val;
+  }
+}
+
+function showMsg(text, isError = false) {
+  const msg = document.getElementById("message");
+  msg.textContent = text;
+  msg.className = isError ? "error" : "success";
+}
+
+function addCard() {
+  const name = document.getElementById("cardName").value.trim();
+  const number = document.getElementById("cardNumber").value.trim();
+  const exp = document.getElementById("cardExp").value.trim();
+  const cvv = document.getElementById("cardCvv").value.trim();
+  const initBal = parseFloat(document.getElementById("initBalance").value) || 0;
+
+  if (!name || number.replace(/\s/g, '').length < 16 || exp.length < 5 || cvv.length < 3) {
+    showMsg("Please enter valid 16-digit card details.", true);
+    return;
+  }
+
+  wallet.hasCard = true;
+  wallet.name = name;
+  wallet.number = number;
+  wallet.exp = exp;
+  wallet.cvv = cvv;
+  wallet.balance = Math.round(initBal * 100) / 1
