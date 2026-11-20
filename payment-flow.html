@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Flow Practice</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+    .box {
+      width: 100%;
+      max-width: 400px;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background: #22c55e;
+      color: #052e16;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #334155;
+      min-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>পেমেন্ট ফ্লো টেস্ট</h2>
+    <label for="amount">Amount (USD)</label>
+    <input id="amount" type="number" placeholder="যেমন: 10" min="1" step="0.01" />
+    <button id="payBtn" type="button">Pay Now</button>
+    <div id="status">স্ট্যাটাস এখানে দেখাবে...</div>
+  </div>
+
+  <script>
+    const amountInput = document.getElementById("amount");
+    const payBtn = document.getElementById("payBtn");
+    const statusBox = document.getElementById("status");
+
+    // এটি পেমেন্ট প্রসেসিং ফাংশন (পরের ধাপে এখানে আসল Gateway/API কল যুক্ত হবে)
+    async function processPayment(amount) {
+      statusBox.textContent = "পেমেন্ট যাচাই করা হচ্ছে...";
+
+      // উদাহরণস্বরূপ ১.৫ সেকেন্ড অপেক্ষা করে রেসপন্স দেখাচ্ছে
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          if (amount > 0) {
+            resolve({
+              ok: true,
+              txId: "TXN_" + Date.now(),
+              amount: amount.toFixed(2)
+            });
+          } else {
+            resolve({
+              ok: false,
+              error: "সঠিক অ্যামাউন্ট দিন।"
+            });
+          }
+        }, 1500);
+      });
+    }
+
+    payBtn.addEventListener("click", async () => {
+      const value = parseFloat(amountInput.value);
+
+      if (isNaN(value) || value <= 0) {
+        statusBox.textContent = "দয়া করে ০-এর বেশি একটি বৈধ অ্যামাউন্ট লিখুন।";
+        return;
+      }
+
+      payBtn.disabled = true;
+      const result = await processPayment(value);
+      payBtn.disabled = false;
+
+      if (result.ok) {
+        statusBox.textContent = `সফল: $${result.amount} প্রসেস হয়েছে (ID: ${result.txId})`;
+      } else {
+        statusBox.textContent = `ব্যর্থ: ${result.error}`;
+      }
+    });
+  </script>
+</body>
+</html>
